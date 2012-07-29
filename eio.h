@@ -188,6 +188,10 @@ enum
   EIO_SEEK, EIO_READ, EIO_WRITE,
   EIO_READAHEAD, EIO_SENDFILE,
   EIO_FSTAT, EIO_FSTATVFS,
+  EIO_LISTXATTR, EIO_LLISTXATTR, EIO_FLISTXATTR,
+  EIO_GETXATTR, EIO_LGETXATTR, EIO_FGETXATTR,
+  EIO_SETXATTR, EIO_LSETXATTR, EIO_FSETXATTR,
+  EIO_REMOVEXATTR, EIO_LREMOVEXATTR, EIO_FREMOVEXATTR,
   EIO_FTRUNCATE, EIO_FUTIME, EIO_FCHMOD, EIO_FCHOWN,
   EIO_SYNC, EIO_FSYNC, EIO_FDATASYNC, EIO_SYNCFS,
   EIO_MSYNC, EIO_MTOUCH, EIO_SYNC_FILE_RANGE, EIO_FALLOCATE,
@@ -254,6 +258,7 @@ struct eio_req
   size_t size;     /* read, write, readahead, sendfile, msync, mlock, sync_file_range, fallocate: length */
   void *ptr1;      /* all applicable requests: pathname, old name; readdir: optional eio_dirents */
   void *ptr2;      /* all applicable requests: new name or memory buffer; readdir: name strings */
+  void *ptr3;      /* extended attributes third ptr (value buffer) */
   eio_tstamp nv1;  /* utime, futime: atime; busy: sleep time */
   eio_tstamp nv2;  /* utime, futime: mtime */
 
@@ -325,52 +330,64 @@ unsigned int eio_nthreads (void); /* number of worker threads in use currently *
 /* convenience wrappers */
 
 #ifndef EIO_NO_WRAPPERS
-eio_req *eio_wd_open   (const char *path, int pri, eio_cb cb, void *data); /* result=wd */
-eio_req *eio_wd_close  (eio_wd wd, int pri, eio_cb cb, void *data);
-eio_req *eio_nop       (int pri, eio_cb cb, void *data); /* does nothing except go through the whole process */
-eio_req *eio_busy      (eio_tstamp delay, int pri, eio_cb cb, void *data); /* ties a thread for this long, simulating busyness */
-eio_req *eio_sync      (int pri, eio_cb cb, void *data);
-eio_req *eio_fsync     (int fd, int pri, eio_cb cb, void *data);
-eio_req *eio_fdatasync (int fd, int pri, eio_cb cb, void *data);
-eio_req *eio_syncfs    (int fd, int pri, eio_cb cb, void *data);
-eio_req *eio_msync     (void *addr, size_t length, int flags, int pri, eio_cb cb, void *data);
-eio_req *eio_mtouch    (void *addr, size_t length, int flags, int pri, eio_cb cb, void *data);
-eio_req *eio_mlock     (void *addr, size_t length, int pri, eio_cb cb, void *data);
-eio_req *eio_mlockall  (int flags, int pri, eio_cb cb, void *data);
+eio_req *eio_wd_open      (const char *path, int pri, eio_cb cb, void *data); /* result=wd */
+eio_req *eio_wd_close     (eio_wd wd, int pri, eio_cb cb, void *data);
+eio_req *eio_nop          (int pri, eio_cb cb, void *data); /* does nothing except go through the whole process */
+eio_req *eio_busy         (eio_tstamp delay, int pri, eio_cb cb, void *data); /* ties a thread for this long, simulating busyness */
+eio_req *eio_sync         (int pri, eio_cb cb, void *data);
+eio_req *eio_fsync        (int fd, int pri, eio_cb cb, void *data);
+eio_req *eio_fdatasync    (int fd, int pri, eio_cb cb, void *data);
+eio_req *eio_syncfs       (int fd, int pri, eio_cb cb, void *data);
+eio_req *eio_msync        (void *addr, size_t length, int flags, int pri, eio_cb cb, void *data);
+eio_req *eio_mtouch       (void *addr, size_t length, int flags, int pri, eio_cb cb, void *data);
+eio_req *eio_mlock        (void *addr, size_t length, int pri, eio_cb cb, void *data);
+eio_req *eio_mlockall     (int flags, int pri, eio_cb cb, void *data);
 eio_req *eio_sync_file_range (int fd, off_t offset, size_t nbytes, unsigned int flags, int pri, eio_cb cb, void *data);
-eio_req *eio_fallocate (int fd, int mode, off_t offset, size_t len, int pri, eio_cb cb, void *data);
-eio_req *eio_close     (int fd, int pri, eio_cb cb, void *data);
-eio_req *eio_readahead (int fd, off_t offset, size_t length, int pri, eio_cb cb, void *data);
-eio_req *eio_seek      (int fd, off_t offset, int whence, int pri, eio_cb cb, void *data);
-eio_req *eio_read      (int fd, void *buf, size_t length, off_t offset, int pri, eio_cb cb, void *data);
-eio_req *eio_write     (int fd, void *buf, size_t length, off_t offset, int pri, eio_cb cb, void *data);
-eio_req *eio_fstat     (int fd, int pri, eio_cb cb, void *data); /* stat buffer=ptr2 allocated dynamically */
-eio_req *eio_fstatvfs  (int fd, int pri, eio_cb cb, void *data); /* stat buffer=ptr2 allocated dynamically */
-eio_req *eio_futime    (int fd, eio_tstamp atime, eio_tstamp mtime, int pri, eio_cb cb, void *data);
-eio_req *eio_ftruncate (int fd, off_t offset, int pri, eio_cb cb, void *data);
-eio_req *eio_fchmod    (int fd, mode_t mode, int pri, eio_cb cb, void *data);
-eio_req *eio_fchown    (int fd, eio_uid_t uid, eio_gid_t gid, int pri, eio_cb cb, void *data);
-eio_req *eio_dup2      (int fd, int fd2, int pri, eio_cb cb, void *data);
-eio_req *eio_sendfile  (int out_fd, int in_fd, off_t in_offset, size_t length, int pri, eio_cb cb, void *data);
-eio_req *eio_open      (const char *path, int flags, mode_t mode, int pri, eio_cb cb, void *data);
-eio_req *eio_utime     (const char *path, eio_tstamp atime, eio_tstamp mtime, int pri, eio_cb cb, void *data);
-eio_req *eio_truncate  (const char *path, off_t offset, int pri, eio_cb cb, void *data);
-eio_req *eio_chown     (const char *path, eio_uid_t uid, eio_gid_t gid, int pri, eio_cb cb, void *data);
-eio_req *eio_chmod     (const char *path, mode_t mode, int pri, eio_cb cb, void *data);
-eio_req *eio_mkdir     (const char *path, mode_t mode, int pri, eio_cb cb, void *data);
-eio_req *eio_readdir   (const char *path, int flags, int pri, eio_cb cb, void *data); /* result=ptr2 allocated dynamically */
-eio_req *eio_rmdir     (const char *path, int pri, eio_cb cb, void *data);
-eio_req *eio_unlink    (const char *path, int pri, eio_cb cb, void *data);
-eio_req *eio_readlink  (const char *path, int pri, eio_cb cb, void *data); /* result=ptr2 allocated dynamically */
-eio_req *eio_realpath  (const char *path, int pri, eio_cb cb, void *data); /* result=ptr2 allocated dynamically */
-eio_req *eio_stat      (const char *path, int pri, eio_cb cb, void *data); /* stat buffer=ptr2 allocated dynamically */
-eio_req *eio_lstat     (const char *path, int pri, eio_cb cb, void *data); /* stat buffer=ptr2 allocated dynamically */
-eio_req *eio_statvfs   (const char *path, int pri, eio_cb cb, void *data); /* stat buffer=ptr2 allocated dynamically */
-eio_req *eio_mknod     (const char *path, mode_t mode, dev_t dev, int pri, eio_cb cb, void *data);
-eio_req *eio_link      (const char *path, const char *new_path, int pri, eio_cb cb, void *data);
-eio_req *eio_symlink   (const char *path, const char *new_path, int pri, eio_cb cb, void *data);
-eio_req *eio_rename    (const char *path, const char *new_path, int pri, eio_cb cb, void *data);
-eio_req *eio_custom    (void (*execute)(eio_req *), int pri, eio_cb cb, void *data);
+eio_req *eio_fallocate    (int fd, int mode, off_t offset, size_t len, int pri, eio_cb cb, void *data);
+eio_req *eio_close        (int fd, int pri, eio_cb cb, void *data);
+eio_req *eio_readahead    (int fd, off_t offset, size_t length, int pri, eio_cb cb, void *data);
+eio_req *eio_seek         (int fd, off_t offset, int whence, int pri, eio_cb cb, void *data);
+eio_req *eio_read         (int fd, void *buf, size_t length, off_t offset, int pri, eio_cb cb, void *data);
+eio_req *eio_write        (int fd, void *buf, size_t length, off_t offset, int pri, eio_cb cb, void *data);
+eio_req *eio_fstat        (int fd, int pri, eio_cb cb, void *data); /* stat buffer=ptr2 allocated dynamically */
+eio_req *eio_fstatvfs     (int fd, int pri, eio_cb cb, void *data); /* stat buffer=ptr2 allocated dynamically */
+eio_req *eio_futime       (int fd, eio_tstamp atime, eio_tstamp mtime, int pri, eio_cb cb, void *data);
+eio_req *eio_ftruncate    (int fd, off_t offset, int pri, eio_cb cb, void *data);
+eio_req *eio_fchmod       (int fd, mode_t mode, int pri, eio_cb cb, void *data);
+eio_req *eio_fchown       (int fd, eio_uid_t uid, eio_gid_t gid, int pri, eio_cb cb, void *data);
+eio_req *eio_dup2         (int fd, int fd2, int pri, eio_cb cb, void *data);
+eio_req *eio_sendfile     (int out_fd, int in_fd, off_t in_offset, size_t length, int pri, eio_cb cb, void *data);
+eio_req *eio_open         (const char *path, int flags, mode_t mode, int pri, eio_cb cb, void *data);
+eio_req *eio_utime        (const char *path, eio_tstamp atime, eio_tstamp mtime, int pri, eio_cb cb, void *data);
+eio_req *eio_truncate     (const char *path, off_t offset, int pri, eio_cb cb, void *data);
+eio_req *eio_chown        (const char *path, eio_uid_t uid, eio_gid_t gid, int pri, eio_cb cb, void *data);
+eio_req *eio_chmod        (const char *path, mode_t mode, int pri, eio_cb cb, void *data);
+eio_req *eio_mkdir        (const char *path, mode_t mode, int pri, eio_cb cb, void *data);
+eio_req *eio_readdir      (const char *path, int flags, int pri, eio_cb cb, void *data); /* result=ptr2 allocated dynamically */
+eio_req *eio_rmdir        (const char *path, int pri, eio_cb cb, void *data);
+eio_req *eio_unlink       (const char *path, int pri, eio_cb cb, void *data);
+eio_req *eio_readlink     (const char *path, int pri, eio_cb cb, void *data); /* result=ptr2 allocated dynamically */
+eio_req *eio_realpath     (const char *path, int pri, eio_cb cb, void *data); /* result=ptr2 allocated dynamically */
+eio_req *eio_stat         (const char *path, int pri, eio_cb cb, void *data); /* stat buffer=ptr2 allocated dynamically */
+eio_req *eio_lstat        (const char *path, int pri, eio_cb cb, void *data); /* stat buffer=ptr2 allocated dynamically */
+eio_req *eio_statvfs      (const char *path, int pri, eio_cb cb, void *data); /* stat buffer=ptr2 allocated dynamically */
+eio_req *eio_listxattr    (const char *path, char *list, size_t size, int pri, eio_cb cb, void *data);
+eio_req *eio_llistxattr   (const char *path, char *list, size_t size, int pri, eio_cb cb, void *data);
+eio_req *eio_flistxattr   (int fd, char *list, size_t size, int pri, eio_cb cb, void *data);
+eio_req *eio_getxattr     (const char *path, const char *name, void *value, size_t size, int pri, eio_cb cb, void *data);
+eio_req *eio_lgetxattr    (const char *path, const char *name, void *value, size_t size, int pri, eio_cb cb, void *data);
+eio_req *eio_fgetxattr    (int fd, const char *name, void *value, size_t size, int pri, eio_cb cb, void *data);
+eio_req *eio_setxattr     (const char *path, const char *name, const void *value, size_t size, int flags, int pri, eio_cb cb, void *data);
+eio_req *eio_lsetxattr    (const char *path, const char *name, const void *value, size_t size, int flags, int pri, eio_cb cb, void *data);
+eio_req *eio_fsetxattr    (int fd, const char *name, const void *value, size_t size, int flags, int pri, eio_cb cb, void *data);
+eio_req *eio_removexattr  (const char *path, const char *name, int pri, eio_cb cb, void *data);
+eio_req *eio_lremovexattr (const char *path, const char *name, int pri, eio_cb cb, void *data);
+eio_req *eio_fremovexattr (int fd, const char *name, int pri, eio_cb cb, void *data);
+eio_req *eio_mknod        (const char *path, mode_t mode, dev_t dev, int pri, eio_cb cb, void *data);
+eio_req *eio_link         (const char *path, const char *new_path, int pri, eio_cb cb, void *data);
+eio_req *eio_symlink      (const char *path, const char *new_path, int pri, eio_cb cb, void *data);
+eio_req *eio_rename       (const char *path, const char *new_path, int pri, eio_cb cb, void *data);
+eio_req *eio_custom       (void (*execute)(eio_req *), int pri, eio_cb cb, void *data);
 #endif
 
 /*****************************************************************************/

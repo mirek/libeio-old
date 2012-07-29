@@ -60,6 +60,14 @@
 #include <fcntl.h>
 #include <assert.h>
 
+#define HAVE_SYS_XATTR_H 1
+
+#ifdef HAVE_ATTR_XATTR_H
+# include <attr/xattr.h>
+#elif HAVE_SYS_XATTR_H
+# include <sys/xattr.h>
+#endif
+
 /* intptr_t comes from unistd.h, says POSIX/UNIX/tradition */
 /* intptr_t only comes from stdint.h, says idiot openbsd coder */
 #if HAVE_STDINT_H
@@ -133,6 +141,22 @@ static void eio_destroy (eio_req *req);
   #define readlink(path,buf,s) EIO_ENOSYS ()
   #define statvfs(path,buf)    EIO_ENOSYS ()
   #define fstatvfs(fd,buf)     EIO_ENOSYS ()
+
+  #define listxattr(path,buf,len)  EIO_ENOSYS ()
+  #define llistxattr(path,buf,len) EIO_ENOSYS ()
+  #define flistxattr(fd,buf,len)   EIO_ENOSYS ()
+
+  #define getxattr(path,name,buf,len)  EIO_ENOSYS ()
+  #define lgetxattr(path,name,buf,len) EIO_ENOSYS ()
+  #define fgetxattr(fd,name,buf,len)   EIO_ENOSYS ()
+
+  #define setxattr(path,name,buf,len,flags)  EIO_ENOSYS ()
+  #define lsetxattr(path,name,buf,len,flags) EIO_ENOSYS ()
+  #define fsetxattr(fd,name,buf,len,flags)   EIO_ENOSYS ()
+
+  #define removexattr(path,name)  EIO_ENOSYS ()
+  #define lremovexattr(path,name) EIO_ENOSYS ()
+  #define fremovexattr(fd,name)   EIO_ENOSYS ()
 
   /* rename() uses MoveFile, which fails to overwrite */
   #define rename(old,neu)      eio__rename (old, neu)
@@ -2082,6 +2106,33 @@ eio__statvfsat (int dirfd, const char *path, struct statvfs *buf)
 
 #endif
 
+static ssize_t
+eio__getxattr (const char *path, const char *name, void *value, size_t size, int options) {
+#ifdef HAVE_ATTR_XATTR_H
+  return getxattr(path, name, value, size, options);
+#elif HAVE_SYS_XATTR_H
+  return getxattr(path, name, value, size, 0, options);
+#endif
+}
+
+static ssize_t
+eio__lgetxattr (const char *path, const char *name, void *value, size_t size, int options) {
+#ifdef HAVE_ATTR_XATTR_H
+  return lgetxattr(path, name, value, size, options);
+#elif HAVE_SYS_XATTR_H
+  return lgetxattr(path, name, value, size, 0, options);
+#endif
+}
+
+static ssize_t
+eio__fgetxattr (int fd, const char *name, void *value, size_t size, int options) {
+#ifdef HAVE_ATTR_XATTR_H
+  return fgetxattr(fd, name, value, size, options);
+#elif HAVE_SYS_XATTR_H
+  return fgetxattr(fd, name, value, size, 0, options);
+#endif
+}
+
 /*****************************************************************************/
 
 #define ALLOC(len)				\
@@ -2285,6 +2336,23 @@ eio_execute (etp_worker *self, eio_req *req)
 
       case EIO_READAHEAD: req->result = readahead     (req->int1, req->offs, req->size); break;
       case EIO_SENDFILE:  req->result = eio__sendfile (req->int1, req->int2, req->offs, req->size); break;
+
+#if HAVE_XATTR_H
+
+      case EIO_LISTXATTR:    req->result = listxattr      (req->ptr1, req->ptr2, (size_t) req->int2); break;
+      case EIO_LLISTXATTR:   req->result = llistxattr     (req->ptr1, req->ptr2, (size_t) req->int2); break;
+      case EIO_FLISTXATTR:   req->result = flistxattr     (req->int1, req->ptr2, (size_t) req->int2); break;
+      case EIO_GETXATTR:     req->result = eio__getxattr  (req->ptr1, req->ptr2, req->ptr3, (size_t) req->int2); break;
+      case EIO_LGETXATTR:    req->result = eio__lgetxattr (req->ptr1, req->ptr2, req->ptr3, (size_t) req->int2); break;
+      case EIO_FGETXATTR:    req->result = eio__fgetxattr (req->int1, req->ptr2, req->ptr3, (size_t) req->int2); break;
+      case EIO_SETXATTR:     req->result = setxattr       (req->ptr1, req->ptr2, req->ptr3, (size_t) req->int2, (int) req->int3); break;
+      case EIO_LSETXATTR:    req->result = lsetxattr      (req->ptr1, req->ptr2, req->ptr3, (size_t) req->int2, (int) req->int3); break;
+      case EIO_FSETXATTR:    req->result = fsetxattr      (req->int1, req->ptr2, req->ptr3, (size_t) req->int2, (int) req->int3); break;
+      case EIO_REMOVEXATTR:  req->result = removexattr    (req->ptr1, req->ptr2); break;
+      case EIO_LREMOVEXATTR: req->result = lremovexattr   (req->ptr1, req->ptr2); break;
+      case EIO_FREMOVEXATTR: req->result = fremovexattr   (req->int1, req->ptr2); break;
+
+#endif
 
 #if HAVE_AT
 
@@ -2643,6 +2711,66 @@ eio_req *eio_lstat (const char *path, int pri, eio_cb cb, void *data)
 eio_req *eio_statvfs (const char *path, int pri, eio_cb cb, void *data)
 {
   return eio__1path (EIO_STATVFS, path, pri, cb, data);
+}
+
+eio_req *eio_listxattr (const char *path, char *list, size_t size, int pri, eio_cb cb, void *data)
+{
+  REQ (EIO_LISTXATTR); PATH; req->ptr2 = list; req->int2 = size; SEND;
+}
+
+eio_req *eio_llistxattr (const char *path, char *list, size_t size, int pri, eio_cb cb, void *data)
+{
+  REQ (EIO_LLISTXATTR); PATH; req->ptr2 = list; req->int2 = size; SEND;
+}
+
+eio_req *eio_flistxattr (int fd, char *list, size_t size, int pri, eio_cb cb, void *data)
+{
+  REQ (EIO_FLISTXATTR); req->int1 = fd; req->ptr2 = list; req->int2 = size; SEND;
+}
+
+eio_req *eio_getxattr (const char *path, const char *name, void *value, size_t size, int pri, eio_cb cb, void *data)
+{
+  REQ (EIO_GETXATTR); PATH; req->ptr2 = (void *) name; req->ptr3 = value; req->int2 = size; SEND;
+}
+
+eio_req *eio_lgetxattr (const char *path, const char *name, void *value, size_t size, int pri, eio_cb cb, void *data)
+{
+  REQ (EIO_LGETXATTR); PATH; req->ptr2 = (void *) name; req->ptr3 = value; req->int2 = size; SEND;
+}
+
+eio_req *eio_fgetxattr (int fd, const char *name, void *value, size_t size, int pri, eio_cb cb, void *data)
+{
+  REQ (EIO_FGETXATTR); req->int1 = fd; req->ptr2 = (void *) name; req->ptr3 = value; req->int2 = size; SEND;
+}
+
+eio_req *eio_setxattr (const char *path, const char *name, const void *value, size_t size, int flags, int pri, eio_cb cb, void *data)
+{
+  REQ (EIO_SETXATTR); PATH; req->ptr2 = (void *) name; req->ptr3 = (void *) value; req->int2 = size; req->int3 = flags; SEND;
+}
+
+eio_req *eio_lsetxattr (const char *path, const char *name, const void *value, size_t size, int flags, int pri, eio_cb cb, void *data)
+{
+  REQ (EIO_LSETXATTR); PATH; req->ptr2 = (void *) name; req->ptr3 = (void *) value; req->int2 = size; req->int3 = flags; SEND;
+}
+
+eio_req *eio_fsetxattr (int fd, const char *name, const void *value, size_t size, int flags, int pri, eio_cb cb, void *data)
+{
+  REQ (EIO_FSETXATTR); req->int1 = fd; req->ptr2 = (void *) name; req->ptr3 = (void *) value; req->int2 = size; req->int3 = flags; SEND;
+}
+
+eio_req *eio_removexattr (const char *path, const char *name, int pri, eio_cb cb, void *data)
+{
+  REQ (EIO_REMOVEXATTR); PATH; req->ptr2 = (void *) name; SEND;
+}
+
+eio_req *eio_lremovexattr (const char *path, const char *name, int pri, eio_cb cb, void *data)
+{
+  REQ (EIO_LREMOVEXATTR); PATH; req->ptr2 = (void *) name; SEND;
+}
+
+eio_req *eio_fremovexattr (int fd, const char *name, int pri, eio_cb cb, void *data)
+{
+  REQ (EIO_FREMOVEXATTR); req->int1 = fd; req->ptr2 = (void *) name; SEND;
 }
 
 eio_req *eio_unlink (const char *path, int pri, eio_cb cb, void *data)
