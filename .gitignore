@@ -1,4 +1,5 @@
 CVS
+Makefile
 Makefile.in
 aclocal.m4
 autom4te.*
@@ -7,3 +8,9 @@ configure
 install-sh
 ltmain.sh
 missing
+.libs
+eio.lo
+eio.o
+libeio.la
+libtool
+stamp-h1
