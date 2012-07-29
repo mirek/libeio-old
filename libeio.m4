@@ -9,7 +9,7 @@ AC_SEARCH_LIBS(
    [AC_MSG_ERROR(pthread functions not found)]
 )
 
-AC_CACHE_CHECK(for utimes, ac_cv_utimes, [AC_LINK_IFELSE([[
+AC_CACHE_CHECK(for utimes, ac_cv_utimes, [AC_LINK_IFELSE([AC_LANG_SOURCE([[
 #include <sys/types.h>
 #include <sys/time.h>
 #include <utime.h>
@@ -20,10 +20,10 @@ int main (void)
    res = utimes ("/", tv);
    return 0;
 }
-]],ac_cv_utimes=yes,ac_cv_utimes=no)])
+]])],ac_cv_utimes=yes,ac_cv_utimes=no)])
 test $ac_cv_utimes = yes && AC_DEFINE(HAVE_UTIMES, 1, utimes(2) is available)
 
-AC_CACHE_CHECK(for futimes, ac_cv_futimes, [AC_LINK_IFELSE([[
+AC_CACHE_CHECK(for futimes, ac_cv_futimes, [AC_LINK_IFELSE([AC_LANG_SOURCE([[
 #include <sys/types.h>
 #include <sys/time.h>
 #include <utime.h>
@@ -35,10 +35,10 @@ int main (void)
    res = futimes (fd, tv);
    return 0;
 }
-]],ac_cv_futimes=yes,ac_cv_futimes=no)])
+]])],ac_cv_futimes=yes,ac_cv_futimes=no)])
 test $ac_cv_futimes = yes && AC_DEFINE(HAVE_FUTIMES, 1, futimes(2) is available)
 
-AC_CACHE_CHECK(for readahead, ac_cv_readahead, [AC_LINK_IFELSE([
+AC_CACHE_CHECK(for readahead, ac_cv_readahead, [AC_LINK_IFELSE([AC_LANG_SOURCE([
 #include <fcntl.h>
 int main (void)
 {
@@ -48,10 +48,10 @@ int main (void)
    res = readahead (fd, 0, count);
    return 0;
 }
-],ac_cv_readahead=yes,ac_cv_readahead=no)])
+])],ac_cv_readahead=yes,ac_cv_readahead=no)])
 test $ac_cv_readahead = yes && AC_DEFINE(HAVE_READAHEAD, 1, readahead(2) is available (linux))
 
-AC_CACHE_CHECK(for fdatasync, ac_cv_fdatasync, [AC_LINK_IFELSE([
+AC_CACHE_CHECK(for fdatasync, ac_cv_fdatasync, [AC_LINK_IFELSE([AC_LANG_SOURCE([
 #include <unistd.h>
 int main (void)
 {
@@ -59,10 +59,10 @@ int main (void)
    fdatasync (fd);
    return 0;
 }
-],ac_cv_fdatasync=yes,ac_cv_fdatasync=no)])
+])],ac_cv_fdatasync=yes,ac_cv_fdatasync=no)])
 test $ac_cv_fdatasync = yes && AC_DEFINE(HAVE_FDATASYNC, 1, fdatasync(2) is available)
 
-AC_CACHE_CHECK(for sendfile, ac_cv_sendfile, [AC_LINK_IFELSE([
+AC_CACHE_CHECK(for sendfile, ac_cv_sendfile, [AC_LINK_IFELSE([AC_LANG_SOURCE([
 # include <sys/types.h>
 #if __linux
 # include <sys/sendfile.h>
@@ -89,10 +89,10 @@ int main (void)
 #endif
    return 0;
 }
-],ac_cv_sendfile=yes,ac_cv_sendfile=no)])
+])],ac_cv_sendfile=yes,ac_cv_sendfile=no)])
 test $ac_cv_sendfile = yes && AC_DEFINE(HAVE_SENDFILE, 1, sendfile(2) is available and supported)
 
-AC_CACHE_CHECK(for sync_file_range, ac_cv_sync_file_range, [AC_LINK_IFELSE([
+AC_CACHE_CHECK(for sync_file_range, ac_cv_sync_file_range, [AC_LINK_IFELSE([AC_LANG_SOURCE([
 #include <fcntl.h>
 int main (void)
 {
@@ -104,10 +104,10 @@ int main (void)
    res = sync_file_range (fd, offset, nbytes, flags);
    return 0;
 }
-],ac_cv_sync_file_range=yes,ac_cv_sync_file_range=no)])
+])],ac_cv_sync_file_range=yes,ac_cv_sync_file_range=no)])
 test $ac_cv_sync_file_range = yes && AC_DEFINE(HAVE_SYNC_FILE_RANGE, 1, sync_file_range(2) is available)
 
-AC_CACHE_CHECK(for fallocate, ac_cv_linux_fallocate, [AC_LINK_IFELSE([
+AC_CACHE_CHECK(for fallocate, ac_cv_linux_fallocate, [AC_LINK_IFELSE([AC_LANG_SOURCE([
 #include <fcntl.h>
 int main (void)
 {
@@ -119,27 +119,27 @@ int main (void)
    res = fallocate (fd, mode, offset, len);
    return 0;
 }
-],ac_cv_linux_fallocate=yes,ac_cv_linux_fallocate=no)])
+])],ac_cv_linux_fallocate=yes,ac_cv_linux_fallocate=no)])
 test $ac_cv_linux_fallocate = yes && AC_DEFINE(HAVE_LINUX_FALLOCATE, 1, fallocate(2) is available)
 
-AC_CACHE_CHECK(for sys_syncfs, ac_cv_sys_syncfs, [AC_LINK_IFELSE([
+AC_CACHE_CHECK(for sys_syncfs, ac_cv_sys_syncfs, [AC_LINK_IFELSE([AC_LANG_SOURCE([
 #include <unistd.h>
 #include <sys/syscall.h>
 int main (void)
 {
   int res = syscall (__NR_syncfs, (int)0);
 }
-],ac_cv_sys_syncfs=yes,ac_cv_sys_syncfs=no)])
+])],ac_cv_sys_syncfs=yes,ac_cv_sys_syncfs=no)])
 test $ac_cv_sys_syncfs = yes && AC_DEFINE(HAVE_SYS_SYNCFS, 1, syscall(__NR_syncfs) is available)
 
-AC_CACHE_CHECK(for prctl_set_name, ac_cv_prctl_set_name, [AC_LINK_IFELSE([
+AC_CACHE_CHECK(for prctl_set_name, ac_cv_prctl_set_name, [AC_LINK_IFELSE([AC_LANG_SOURCE([
 #include <sys/prctl.h>
 int main (void)
 {
   char name[] = "test123";
   int res = prctl (PR_SET_NAME, (unsigned long)name, 0, 0, 0);
 }
-],ac_cv_prctl_set_name=yes,ac_cv_prctl_set_name=no)])
+])],ac_cv_prctl_set_name=yes,ac_cv_prctl_set_name=no)])
 test $ac_cv_prctl_set_name = yes && AC_DEFINE(HAVE_PRCTL_SET_NAME, 1, prctl(PR_SET_NAME) is available)
 
 dnl #############################################################################
@@ -147,7 +147,7 @@ dnl # these checks exist for the benefit of IO::AIO
 
 dnl at least uclibc defines _POSIX_ADVISORY_INFO without *any* of the required
 dnl functionality actually being present. ugh.
-AC_CACHE_CHECK(for posix_madvise, ac_cv_posix_madvise, [AC_LINK_IFELSE([
+AC_CACHE_CHECK(for posix_madvise, ac_cv_posix_madvise, [AC_LINK_IFELSE([AC_LANG_SOURCE([
 #include <sys/mman.h>
 int main (void)
 {
@@ -158,10 +158,10 @@ int main (void)
    int d = POSIX_MADV_DONTNEED;
    return 0;
 }
-],ac_cv_posix_madvise=yes,ac_cv_posix_madvise=no)])
+])],ac_cv_posix_madvise=yes,ac_cv_posix_madvise=no)])
 test $ac_cv_posix_madvise = yes && AC_DEFINE(HAVE_POSIX_MADVISE, 1, posix_madvise(2) is available)
 
-AC_CACHE_CHECK(for posix_fadvise, ac_cv_posix_fadvise, [AC_LINK_IFELSE([
+AC_CACHE_CHECK(for posix_fadvise, ac_cv_posix_fadvise, [AC_LINK_IFELSE([AC_LANG_SOURCE([
 #define _XOPEN_SOURCE 600
 #include <fcntl.h>
 int main (void)
@@ -174,13 +174,13 @@ int main (void)
    int e = POSIX_FADV_DONTNEED;
    return 0;
 }
-],ac_cv_posix_fadvise=yes,ac_cv_posix_fadvise=no)])
+])],ac_cv_posix_fadvise=yes,ac_cv_posix_fadvise=no)])
 test $ac_cv_posix_fadvise = yes && AC_DEFINE(HAVE_POSIX_FADVISE, 1, posix_fadvise(2) is available)
 
 dnl lots of linux specifics
 AC_CHECK_HEADERS([linux/fs.h linux/fiemap.h])
 
-AC_CACHE_CHECK([for splice, vmsplice and tee], ac_cv_linux_splice, [AC_LINK_IFELSE([
+AC_CACHE_CHECK([for splice, vmsplice and tee], ac_cv_linux_splice, [AC_LINK_IFELSE([AC_LANG_SOURCE([
 #include <fcntl.h>
 int main (void)
 {
@@ -190,6 +190,6 @@ int main (void)
    res = vmsplice ((int)0, (struct iovec *)0, 0, SPLICE_F_NONBLOCK | SPLICE_F_GIFT);
    return 0;
 }
-],ac_cv_linux_splice=yes,ac_cv_linux_splice=no)])
+])],ac_cv_linux_splice=yes,ac_cv_linux_splice=no)])
 test $ac_cv_linux_splice = yes && AC_DEFINE(HAVE_LINUX_SPLICE, 1, splice/vmsplice/tee(2) are available)
 
