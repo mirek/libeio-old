@@ -1,0 +1,9 @@
+CVS
+Makefile.in
+aclocal.m4
+autom4te.*
+config.*
+configure
+install-sh
+ltmain.sh
+missing
